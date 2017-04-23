@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">USafe</string>
+    <string name="google_maps_api_key">AIzaSyB6yMoK98piZ4RRQ0n3o6nJvLTNZBGWOvQ</string>
+    <string-array name="changepin_array">
+        <item>Assault(Orange)</item>
+        <item>Theft(Yellow)</item>
+        <item>Robbery(Green)</item>
+        <item>Rape(Cyan)</item>
+        <item>Harassment(Azure)</item>
+        <item>Discrimination(Blue)</item>
+        <item>Abduction(Magenta)</item>
+        <item>Others(Rose)</item>
+    </string-array>
+    <string-array name="time_selection">
+        <item>At the end</item>
+        <item>customize</item>
+    </string-array>
+</resources>
