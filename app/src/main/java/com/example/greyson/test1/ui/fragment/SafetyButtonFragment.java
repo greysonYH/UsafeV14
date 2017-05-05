@@ -1,10 +1,14 @@
 package com.example.greyson.test1.ui.fragment;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -45,6 +49,7 @@ import static android.content.Context.NOTIFICATION_SERVICE;
 public class SafetyButtonFragment extends BaseFragment implements View.OnClickListener{
     private static final int RESULT_PICK_CONTACT = 111;
     private static final int REQUEST_SEND_SMS = 222;
+    private static final int REQUEST_READ_CONTACT = 333;
     private LinearLayout mLLStartButton;
     private LinearLayout mLLCancelButton;
     private LinearLayout mLLSettingButton;
@@ -52,7 +57,9 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
     private TextView mTVContactNumber;
     private CountDownView cdv;
 
+    private boolean canSendMSM;
     private String phoneNumber;
+    private String tiemrStatus;
 
     /**
      * Initial view
@@ -74,10 +81,13 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
         cdv.setListener(new TimerListener() {
             @Override
             public void timerElapsed() {
-
                 cdv.stop();
-                checkSMSPermission();
-                //sendMessageToContact();
+                //checkSMSPermission();
+                if (canSendMSM == true) {
+                    sendMessageToContact();
+                }
+                canSendMSM = false;
+                ///
             }
         });
         return view;
@@ -86,15 +96,31 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
     /**
      * Check permission of message
      */
-    private void checkSMSPermission() {
+    private boolean checkSMSPermission() {
         if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.SEND_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(), Manifest.permission.SEND_SMS)) {
-
+                return true;
             } else {
                 requestPermissions(new String[]{Manifest.permission.SEND_SMS}, REQUEST_SEND_SMS);
+                return false;
             }
-        }else {sendMessageToContact();}
+        }
+        return true;
+        //else {sendMessageToContact();}
+    }
+
+    private boolean checkReadContactPermission() {
+        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(), Manifest.permission.READ_CONTACTS)) {
+                return true;
+            } else {
+                requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, REQUEST_READ_CONTACT);
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -109,7 +135,11 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
         switch (requestCode){
             case REQUEST_SEND_SMS:{
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    sendMessageToContact();}
+                    startTimer();}
+            }break;
+            case REQUEST_READ_CONTACT:{
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    settingButton();}
             }break;
         }
     }
@@ -148,15 +178,63 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
      */
     private void sendMessageToContact() {
         //http://maps.google.com/maps?q=-37.886256,145.0543715
+
+        String SMS_SENT = "SMS_SENT";
+        String SMS_DELIVERED = "SMS_DELIVERED";
+        PendingIntent sentPendingIntent = PendingIntent.getBroadcast(mContext, 0, new Intent(SMS_SENT), 0);
+        PendingIntent deliveredPendingIntent = PendingIntent.getBroadcast(mContext, 0, new Intent(SMS_DELIVERED), 0);
+
+
+        BroadcastReceiver smsSent = new BroadcastReceiver(){
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                switch (getResultCode()) {
+                    case Activity.RESULT_OK:
+                        Toast.makeText(context, "SMS sent successfully", Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                        Toast.makeText(context, "Generic failure cause", Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_NO_SERVICE:
+                        //Toast.makeText(context, "Service is currently unavailable", Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_NULL_PDU:
+                        Toast.makeText(context, "No pdu provided", Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_RADIO_OFF:
+                        Toast.makeText(context, "Radio was explicitly turned off", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        };
+        mContext.registerReceiver(smsSent, new IntentFilter(SMS_SENT));
+
+        BroadcastReceiver smsDelivered = new BroadcastReceiver(){
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                switch (getResultCode()) {
+                    case Activity.RESULT_OK:
+                        Toast.makeText(context, "SMS delivered", Toast.LENGTH_SHORT).show();
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        Toast.makeText(context, "SMS not delivered", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        };
+        mContext.registerReceiver(smsDelivered, new IntentFilter(SMS_DELIVERED));
+
+
+
         String[] ePhoneList = mTVContactNumber.getText().toString().split(":");
         if (checkContactNotEmpty()){
             SharedPreferences preferences = mContext.getSharedPreferences("LastLocation",MODE_PRIVATE);
             String lastLocation = preferences.getString("last location",null);
             String baseMapUrl = "http://maps.google.com/maps?q=";
-            String eMessage = "This is a emergency message, please call me first, press this link to see my last location: "
+            String eMessage = "This is an emergency message, please call me first, press this link to see my last location: "
                     + baseMapUrl + lastLocation;
             SmsManager smsManager = SmsManager.getDefault();
-            smsManager.sendTextMessage(ePhoneList[1], null, eMessage, null, null);
+            smsManager.sendTextMessage(ePhoneList[1], null, eMessage, sentPendingIntent, deliveredPendingIntent);
             Toast.makeText(mContext, "SMS sent.", Toast.LENGTH_LONG).show();
         }
     }
@@ -166,6 +244,7 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
      */
     @Override
     protected void initData() {
+        canSendMSM = true;
         SharedPreferences preferences = mContext.getSharedPreferences("LastContact",MODE_PRIVATE);
         String lastContact = preferences.getString("contact",null);
         if (lastContact == null) {
@@ -195,15 +274,23 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
         switch (v.getId()) {
             case R.id.ll_startbutton:
                 mLLStartButton.setSelected(true);
+                //mLLSettingButton.setSelected(false);
+                //mLLCancelButton.setSelected(false);
                 startTimer();
                 break;
             case R.id.ll_cancelbutton:
                 mLLCancelButton.setSelected(true);
+                //mLLStartButton.setSelected(false);
+                //mLLSettingButton.setSelected(false);
                 resetTimer();
                 break;
             case R.id.ll_settingbutton:
                 mLLSettingButton.setSelected(true);
-                settingButton();
+                //mLLStartButton.setSelected(false);
+                //mLLCancelButton.setSelected(false);
+                if (checkReadContactPermission()){
+                    settingButton();
+                }
                 break;
         }
     }
@@ -213,10 +300,12 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
      */
     private void resetTimer() {
         cdv.reset();
+        canSendMSM = true;
     }
 
     private void startTimer() {
-        if(checkContactNotEmpty()) {
+        if(checkContactNotEmpty() && checkSMSPermission()) {
+
             cdv.start();
             startNotification();
         }
@@ -240,9 +329,9 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
         intent2.putExtra("notification",2);
         PendingIntent pIntent2 = PendingIntent.getActivity(mContext, (int) System.currentTimeMillis(), intent2, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        NotificationCompat.Action action1 = new NotificationCompat.Action.Builder(R.drawable.start_24,"Start Timer",pIntent1).build();
+        NotificationCompat.Action action1 = new NotificationCompat.Action.Builder(R.drawable.start_24,"Start Button",pIntent1).build();
 
-        NotificationCompat.Action action2 = new NotificationCompat.Action.Builder(R.drawable.stop_24,"Reset Timer",pIntent2).build();
+        NotificationCompat.Action action2 = new NotificationCompat.Action.Builder(R.drawable.stop_24,"Stop Button",pIntent2).build();
 
         Notification n  = new NotificationCompat.Builder(mContext)
                 .setContentTitle("Welcome to use U-Safe")
@@ -281,7 +370,6 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
         Intent contactPickerIntent = new Intent(Intent.ACTION_PICK,
                 ContactsContract.CommonDataKinds.Phone.CONTENT_URI);
         startActivityForResult(contactPickerIntent, RESULT_PICK_CONTACT);
-
     }
 
     @Override
@@ -334,9 +422,11 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
             switch (extra) {
                 case 1:
                     startTimer();
+                    getArguments().clear();
                     break;
                 case 2:
                     resetTimer();
+                    getArguments().clear();
                     break;
             }
         }

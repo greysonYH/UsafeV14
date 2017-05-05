@@ -6,18 +6,7 @@
     android:background="@android:color/white">
 
 
-    <android.support.v7.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:background="@android:color/white">
-        <android.support.v7.widget.AppCompatTextView
-            android:id="@+id/tv_title"
-            android:layout_width="wrap_content"
-            android:layout_gravity="center"
-            android:layout_height="wrap_content"
-            android:textSize="20dp"/>
-    </android.support.v7.widget.Toolbar>
+    <include layout="@layout/item_toolbar"/>
 
     <View
         android:layout_width="match_parent"
@@ -56,7 +45,7 @@
     <LinearLayout
         android:id="@+id/ll_addnote"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="wrap_content"
         android:background="?android:attr/selectableItemBackground"
         android:gravity="center"
         android:orientation="horizontal"
@@ -65,10 +54,12 @@
             android:id="@+id/et_addNote"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
+            android:gravity="top"
             android:hint="Add Note"
-            android:maxLines="4"
-            android:inputType="text"
+            android:background="@null"
+            android:minLines="6"
+            android:maxLines="8"
+            android:inputType="textMultiLine"
             android:imeOptions="actionDone"
             android:textSize="40px"/>
 
@@ -80,9 +71,15 @@
         android:layout_height="2dp"/>
 
     <LinearLayout
-        android:id="@+id/ll_deletepin"
         android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+    <LinearLayout
+        android:id="@+id/ll_deletepin"
+        android:layout_width="0dp"
         android:layout_height="50dp"
+        android:layout_weight="1"
         android:background="?android:attr/selectableItemBackground"
         android:gravity="center"
         android:orientation="horizontal"
@@ -96,14 +93,15 @@
     </LinearLayout>
 
     <View
-        android:layout_width="match_parent"
+        android:layout_width="2dp"
         android:background="@color/colorLine"
-        android:layout_height="2dp"/>
+        android:layout_height="match_parent"/>
 
     <LinearLayout
         android:id="@+id/ll_savepin"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="50dp"
+        android:layout_weight="1"
         android:background="?android:attr/selectableItemBackground"
         android:gravity="center"
         android:orientation="horizontal"
@@ -116,4 +114,9 @@
 
     </LinearLayout>
 
+    </LinearLayout>
+    <View
+        android:layout_width="wrap_content"
+        android:background="@color/colorLine"
+        android:layout_height="2dp"/>
 </LinearLayout>

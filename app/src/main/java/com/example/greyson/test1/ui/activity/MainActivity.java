@@ -8,6 +8,9 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v7.widget.AppCompatTextView;
+import android.support.v7.widget.Toolbar;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -50,6 +53,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     @Override
     protected void initView() {
+        Toolbar toolbar = findView(R.id.toolbar);
+        AppCompatTextView tvTitle = findView(R.id.tv_title);
+        tvTitle.setText("U-Safe");
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+
         FrameLayout flMain = findView(R.id.fl_main);
         mLLSafetyMap = findView(R.id.ll_safetymap);
         mLLSafetyButton = findView(R.id.ll_safetybutton);
@@ -71,9 +81,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mFragments.add(mSafetyMoreFragment);
         mFragments.add(mSafetyButtonFragment);
 
-        mFragmentManager.beginTransaction().add(R.id.fl_main, mSafetyMapFragment, "0").commitAllowingStateLoss();
-        mCurrentIndex = 0;
-        mLLSafetyMap.setSelected(true);
+        checkMenuIntent();
+        //mFragmentManager.beginTransaction().add(R.id.fl_main, mSafetyMapFragment, "0").commitAllowingStateLoss();
+        //mCurrentIndex = 0;
+        //mLLSafetyMap.setSelected(true);
 
         IntentFilter filter = new IntentFilter(Constants.INTENT_ACTION_SELECT_FRAG_BUTTON);
         filter.addAction(Constants.INTENT_ACTION_USER_LOGIN);
@@ -81,6 +92,28 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         registerReceiver(mReceiver, filter);
     }
 
+    private void checkMenuIntent () {
+        Intent intent = getIntent();
+        Bundle bundle = intent.getExtras();
+        String str = bundle.getString("menu");
+        switch (str) {
+            case "map":
+                mFragmentManager.beginTransaction().add(R.id.fl_main, mSafetyMapFragment, "0").commitAllowingStateLoss();
+                mCurrentIndex = 0;
+                mLLSafetyMap.setSelected(true);
+                break;
+            case "button":
+                mFragmentManager.beginTransaction().add(R.id.fl_main, mSafetyButtonFragment, "1").commitAllowingStateLoss();
+                mCurrentIndex = 0;
+                mLLSafetyMap.setSelected(true);
+                break;
+            case "track":
+                mFragmentManager.beginTransaction().add(R.id.fl_main, mSafetyTrackFragment, "2").commitAllowingStateLoss();
+                mCurrentIndex = 0;
+                mLLSafetyMap.setSelected(true);
+                break;
+        }
+    }
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -209,6 +242,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         fragmentTransaction.hide(mFragments.get(mCurrentIndex));
         fragmentTransaction.commitAllowingStateLoss();
         mCurrentIndex = index;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+        }
+        return true;
     }
 
     @Override

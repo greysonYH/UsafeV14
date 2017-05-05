@@ -132,7 +132,6 @@ public class MapSettingActivity extends BaseActivity implements View.OnClickList
         String status = b.getString("status");
         fromIntent.putExtra("tag", tag);
         fromIntent.putExtra("status", status);
-
         setResult( 1 , fromIntent);
         finish();
     }
@@ -149,7 +148,7 @@ public class MapSettingActivity extends BaseActivity implements View.OnClickList
         fromIntent.putExtra("lng", lng);
         fromIntent.putExtra("tag", tag);
         fromIntent.putExtra("status", status);
-        fromIntent.putExtra("note", toDescription);
+        fromIntent.putExtra("note", mETAddNote.getText().toString());
 
         setResult( 2 , fromIntent);
         finish();

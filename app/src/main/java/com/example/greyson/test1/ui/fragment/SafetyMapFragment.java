@@ -14,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.greyson.test1.R;
@@ -70,6 +71,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     MapView mapView;
+    TextView mTvSafetyPlace;
 
     private LinearLayout mLLSafePlace;
     private LinearLayout mLLSafePin;
@@ -89,7 +91,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
 
         mLLSafePlace = (LinearLayout) view.findViewById(R.id.ll_safetyplace); // Initialize the layout uesd to call safe places map
         mLLSafePin = (LinearLayout) view.findViewById(R.id.ll_safetypin); // Initialize the layout used to call pin map
-
+        mTvSafetyPlace = (TextView) view.findViewById(R.id.tv_safetyplace);
         mapView = (MapView) view.findViewById(R.id.map);  // Initialize the map view
         mapView.onCreate(savedInstanceState);
         mapView.onResume();
@@ -432,18 +434,25 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      */
     @Override
     public void onClick(View v) {
-        mLLSafePlace.setSelected(false);
+        //mLLSafePlace.setSelected(false);
         mLLSafePin.setSelected(false);
         // The action if one of two layouts is activated
         switch (v.getId()) {
             case R.id.ll_safetyplace:
-                mLLSafePlace.setSelected(true);
-                mLLSafePin.setSelected(false);
-                initPlaceMap();
+                if(!mLLSafePlace.isSelected()){
+                    hidePinMap();
+                    mTvSafetyPlace.setText("Show Pins");
+                    mLLSafePlace.setSelected(true);
+                } else if (mLLSafePlace.isSelected()) {
+                    initPlaceMap();
+                    mTvSafetyPlace.setText("Hide Pins");
+                    mLLSafePlace.setSelected(false);
+                }
                 break;
             case R.id.ll_safetypin:
                 mLLSafePin.setSelected(true);
                 mLLSafePlace.setSelected(false);
+                mTvSafetyPlace.setText("Show Pins");
                 initPinMap();
                 break;
         }
@@ -453,6 +462,41 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      * This method is used to initialize the map view of safe places
      */
     private void initPlaceMap() {
+        googleMap.clear();
+        LatLng latLng = getCurrentLocation();
+        googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(14));
+        handleNewLocation();
+        showPinMap();
+    }
+
+    private void showPinMap() {
+        preferences = mContext.getSharedPreferences("LocalUser",MODE_PRIVATE);
+        showMarkerFromSharedPreference(getObjectFromSharedPreference("admin"));
+        googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                if (mLLSafePin.isSelected() == true) {
+                    //marker.setSnippet("Click here for setting");//
+                    marker.showInfoWindow();
+                }else{
+                    marker.showInfoWindow();
+                }
+                return true;
+            }
+        });
+
+        googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                if (mLLSafePin.isSelected() == true) {
+                    sendPinStatus(marker);
+                }
+            }
+        });
+    }
+
+    private void hidePinMap() {
         googleMap.clear();
         LatLng latLng = getCurrentLocation();
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
@@ -472,7 +516,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         showMarkerFromSharedPreference(getObjectFromSharedPreference("admin"));
 
         Marker pinMarker = googleMap.addMarker(new MarkerOptions().position(latLng)
-                .draggable(true).title("New Incident Pin").snippet("Drag and Drop :)")
+                .draggable(true).title("New Incident Pin").snippet("Long Press for Dragging")
                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET)));
         pinMarker.showInfoWindow();
 
@@ -662,33 +706,25 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      */
     private void setMarkerColor(Marker marker, String color) {
         switch (color) {
-            case "Assault(Orange)":
+            case "Assault(Red)":
                 marker.setTitle("Assault");
-                marker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
+                marker.setIcon(BitmapDescriptorFactory.defaultMarker(10));
                 break;
-            case "Theft(Yellow)":
-                marker.setTitle("Theft");
-                marker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
-                break;
-            case "Robbery(Green)":
-                marker.setTitle("Robbery");
-                marker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
-                break;
-            case "Rape(Cyan)":
-                marker.setTitle("Rape");
-                marker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN));
-                break;
-            case "Harassment(Azure)":
-                marker.setTitle("Harassment");
-                marker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
-                break;
-            case "Discrimination(Blue)":
+            case "Discrimination(Purple)":
                 marker.setTitle("Discrimination");
-                marker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+                marker.setIcon(BitmapDescriptorFactory.defaultMarker(280));
                 break;
-            case "Abduction(Magenta)":
-                marker.setTitle("Abduction");
-                marker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
+            case "Stalking(Blue)":
+                marker.setTitle("Stalking");
+                marker.setIcon(BitmapDescriptorFactory.defaultMarker(230));
+                break;
+            case "Theft/Robbery(Green)":
+                marker.setTitle("Theft/Robbery");
+                marker.setIcon(BitmapDescriptorFactory.defaultMarker(90));
+                break;
+            case "Others(Yellow)":
+                marker.setTitle("Others");
+                marker.setIcon(BitmapDescriptorFactory.defaultMarker(70));
                 break;
             default:
                 marker.setTitle("Others");
@@ -716,7 +752,6 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
             handleNewLocation();}///
     }
 
-
     /**
      * This method called when the activity will start interacting with the user.
      */
@@ -724,10 +759,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
     public void onResume() {
         super.onResume();
         mGoogleApiClient.connect();
-
-
     }
-
 
     /**
      * This method called when the system is about to start resuming a previous activity.

@@ -20,4 +20,19 @@
         <item name="android:windowExitAnimation">@anim/splash2</item>
     </style>
 
+    <!-- LIGHT Theme -->
+    <style name="Theme_Light_Base" parent="@style/ContactPicker_Theme_Light">
+        <!-- ActionBarCompat -->
+        <item name="colorPrimary">@color/text_color_primary_light</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorPrimaryDark">@color/text_color_primary_dark</item>
+
+        <item name="backgroundColor">@color/background_light</item>
+        <!--<item name="icTheme">@drawable/ic_palette_black_36dp</item>-->
+        <!--<item name="icPickContact">@drawable/ic_person_add_black_36dp</item>-->
+    </style>
+
+    <style name="Theme_Light_picker" parent="@style/Theme_Light_Base"/>
+
+
 </resources>
