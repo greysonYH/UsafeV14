@@ -9,6 +9,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -74,10 +75,10 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
     TextView mTvSafetyPlace;
 
     private LinearLayout mLLSafePlace;
-    private LinearLayout mLLSafePin;
+    private FloatingActionButton mFAB;
     private SharedPreferences preferences;
     private String cloLocation;
-
+    private boolean hidePin;
     /**
      * This method is used to initialize the map view and request the current location
      * @param inflater
@@ -90,8 +91,28 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         View view = inflater.inflate(R.layout.frag_safetymap, container, false);
 
         mLLSafePlace = (LinearLayout) view.findViewById(R.id.ll_safetyplace); // Initialize the layout uesd to call safe places map
-        mLLSafePin = (LinearLayout) view.findViewById(R.id.ll_safetypin); // Initialize the layout used to call pin map
         mTvSafetyPlace = (TextView) view.findViewById(R.id.tv_safetyplace);
+        mFAB = (FloatingActionButton)view.findViewById(R.id.fab_map);
+        mFAB.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if (mFAB.isSelected()) {
+                    initPlaceMap();
+                    mFAB.setImageResource(R.drawable.ic_close_black_24dp);
+                    mFAB.setSelected(false);
+                    if (mTvSafetyPlace.getText().toString().equals("All My Pins")) {
+                        mTvSafetyPlace.setText("Hide All Pins");
+                        mTvSafetyPlace.setSelected(false);
+                    }
+                }
+                else if (!mFAB.isSelected()) {
+                    initPinMap();
+                    mFAB.setImageResource(R.drawable.ic_close_white_24dp);
+                    mFAB.setSelected(true);
+                    mTvSafetyPlace.setText("All My Pins");
+                }
+            }
+        });
+
         mapView = (MapView) view.findViewById(R.id.map);  // Initialize the map view
         mapView.onCreate(savedInstanceState);
         mapView.onResume();
@@ -150,7 +171,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         if(ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED) {
             googleMap.setMyLocationEnabled(true);
-            if (mLLSafePin.isSelected() == true) {initPinMap();}
+            if (mFAB.isSelected() == true) {initPinMap();}
             else {initPlaceMap();}
         }
     }
@@ -425,7 +446,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
     protected void initEvent() {
         mLLSafePlace.setOnClickListener(this);
         mLLSafePlace.setSelected(true);
-        mLLSafePin.setOnClickListener(this);
+        mFAB.setSelected(false);
     }
 
     /**
@@ -435,27 +456,75 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
     @Override
     public void onClick(View v) {
         //mLLSafePlace.setSelected(false);
-        mLLSafePin.setSelected(false);
+        //mLLSafePlace.setSelected(false);
         // The action if one of two layouts is activated
         switch (v.getId()) {
             case R.id.ll_safetyplace:
-                if(!mLLSafePlace.isSelected()){
-                    hidePinMap();
-                    mTvSafetyPlace.setText("Show Pins");
-                    mLLSafePlace.setSelected(true);
-                } else if (mLLSafePlace.isSelected()) {
-                    initPlaceMap();
-                    mTvSafetyPlace.setText("Hide Pins");
-                    mLLSafePlace.setSelected(false);
+                if (mFAB.isSelected()) {
+                    showAllMyPins();
+                    mFAB.setImageResource(R.drawable.ic_close_black_24dp);
+                    mFAB.setSelected(false);
+                    mTvSafetyPlace.setText("Show Safety Map");
+                }
+                else if (!mFAB.isSelected()) {
+                    if (!mLLSafePlace.isSelected()) {
+                        hidePinMap();
+                        hidePin = true;
+                        mTvSafetyPlace.setText("Show All Pins");
+                        mLLSafePlace.setSelected(true);
+                    } else if (mLLSafePlace.isSelected()) {
+                        if (mTvSafetyPlace.getText().toString().equals("Show Safety Map")) {
+                            mTvSafetyPlace.setText("Hide All Pins");
+
+                            initPlaceMap();
+                            hidePin = false;
+                            mLLSafePlace.setSelected(false);
+                        } else {
+                            mTvSafetyPlace.setText("Hide All Pins");
+                            initPlaceMap();
+                            hidePin = false;
+                            mLLSafePlace.setSelected(false);
+                        }
+                    } else {
+                        mTvSafetyPlace.setText("Hide All Pins");
+                        initPlaceMap();
+                        hidePin = false;
+                        mLLSafePlace.setSelected(false);
+                    }
                 }
                 break;
-            case R.id.ll_safetypin:
-                mLLSafePin.setSelected(true);
-                mLLSafePlace.setSelected(false);
-                mTvSafetyPlace.setText("Show Pins");
-                initPinMap();
-                break;
         }
+    }
+
+    private void showAllMyPins() {
+        googleMap.clear();
+        LatLng latLng = getCurrentLocation();
+        googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(12));
+        preferences = mContext.getSharedPreferences("LocalUser",MODE_PRIVATE);
+        showMarkerFromSharedPreference(getObjectFromSharedPreference("admin"));
+
+        googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                if (mFAB.isSelected() == true) {
+                    //marker.setSnippet("Click here for setting");//
+                    marker.showInfoWindow();
+                }else{
+                    marker.showInfoWindow();
+                }
+                return true;
+            }
+        });
+
+        googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                if (mFAB.isSelected() == true) {
+                    sendPinStatus(marker);
+                }
+            }
+        });
     }
 
     /**
@@ -476,7 +545,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
-                if (mLLSafePin.isSelected() == true) {
+                if (mFAB.isSelected() == true) {
                     //marker.setSnippet("Click here for setting");//
                     marker.showInfoWindow();
                 }else{
@@ -489,7 +558,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
             @Override
             public void onInfoWindowClick(Marker marker) {
-                if (mLLSafePin.isSelected() == true) {
+                if (mFAB.isSelected() == true) {
                     sendPinStatus(marker);
                 }
             }
@@ -543,7 +612,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
-                if (mLLSafePin.isSelected() == true) {
+                if (mFAB.isSelected() == true) {
                     //marker.setSnippet("Click here for setting");//
                     marker.showInfoWindow();
                 }else{
@@ -556,7 +625,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
             @Override
             public void onInfoWindowClick(Marker marker) {
-                if (mLLSafePin.isSelected() == true) {
+                if (mFAB.isSelected() == true) {
                     sendPinStatus(marker);
                 }
             }
@@ -747,7 +816,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      */
     @Override
     public void onLocationChanged(Location location) {
-        if (mLLSafePin.isSelected() != true) {
+        if (mFAB.isSelected() != true) {
             googleMap.clear();
             handleNewLocation();}///
     }

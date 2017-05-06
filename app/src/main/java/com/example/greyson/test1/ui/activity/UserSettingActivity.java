@@ -194,7 +194,6 @@ public class UserSettingActivity extends BaseActivity implements View.OnClickLis
     }
 
     private void addContacts1() {
-
         Intent intent = new Intent(this, ContactPickerActivity.class)
                 .putExtra(ContactPickerActivity.EXTRA_THEME, R.style.ContactPicker_Theme_Light)
                 .putExtra(ContactPickerActivity.EXTRA_CONTACT_BADGE_TYPE, ContactPictureType.ROUND.name())

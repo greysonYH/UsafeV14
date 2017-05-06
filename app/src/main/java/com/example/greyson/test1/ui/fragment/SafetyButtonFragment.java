@@ -77,7 +77,7 @@ public class SafetyButtonFragment extends BaseFragment implements View.OnClickLi
         mTVContactName = (TextView) view.findViewById(R.id.tv_contactName);
         mTVContactNumber = (TextView) view.findViewById(R.id.tv_contactPhone);
         cdv = (CountDownView) view.findViewById(R.id.countdownview);
-        cdv.setInitialTime(5000); // Initial time of 5 seconds.
+        cdv.setInitialTime(10000); // Initial time of 5 seconds.
         cdv.setListener(new TimerListener() {
             @Override
             public void timerElapsed() {

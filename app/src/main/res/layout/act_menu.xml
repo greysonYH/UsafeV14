@@ -120,29 +120,6 @@
         android:layout_height="1dp"/>
 
     <LinearLayout
-        android:id="@+id/ll_safetyPinMenu"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@color/pinMenuBg"
-        android:gravity="center"
-        android:orientation="horizontal"
-        >
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Pin Unsafe Events"
-            android:textSize="35px"/>
-
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:background="@color/colorLine"
-        android:layout_height="1dp"/>
-
-    <LinearLayout
         android:id="@+id/ll_settingMenu"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -155,6 +132,40 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="User Setting"
+            android:textSize="35px"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_helpAndSetting"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/settingMenuBg"
+        android:gravity="center"
+        android:orientation="horizontal"
+        >
+
+        <TextView
+            android:id="@+id/tv_userHelp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="User Help"
+            android:textSize="35px"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="4"
+            android:textSize="35px"/>
+
+        <TextView
+            android:id="@+id/tv_userSetting"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="User Setting"
             android:textSize="35px"/>
 

@@ -1,10 +1,14 @@
 package com.example.greyson.test1.ui.activity;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -28,6 +32,8 @@ import com.example.greyson.test1.ui.fragment.SafetyTrackFragment;
 import java.util.ArrayList;
 import java.util.List;
 
+import cn.pedant.SweetAlert.SweetAlertDialog;
+
 /**
  * Created by greyson on 22/3/17.
  */
@@ -44,6 +50,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private SafetyTrackFragment mSafetyTrackFragment;
     private SafetyMoreFragment mSafetyMoreFragment;
 
+    private static final int REQUEST_CALL_PHONE = 004;
     private int mCurrentIndex;
 
     @Override
@@ -223,8 +230,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 mLLSafetyTrack.setSelected(true);
                 break;
             case R.id.ll_safetymore:
-                index = 2;
-                mLLSafetyMore.setSelected(true);
+                index = mCurrentIndex;
+                showCheckDialog();
                 break;
         }
         if (index == mCurrentIndex) {
@@ -242,6 +249,47 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         fragmentTransaction.hide(mFragments.get(mCurrentIndex));
         fragmentTransaction.commitAllowingStateLoss();
         mCurrentIndex = index;
+    }
+
+    private void showCheckDialog() {
+        new SweetAlertDialog(this, SweetAlertDialog.WARNING_TYPE)
+                .setTitleText("Are you sure Call 000 ?")
+                .setCancelText("No")
+                .showCancelButton(true)
+                .setCancelClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                    @Override
+                    public void onClick(SweetAlertDialog sDialog) {
+                        sDialog.cancel();
+                    }
+                })
+                .setConfirmText("Yes")
+                .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                    @Override
+                    public void onClick(SweetAlertDialog sDialog) {
+                        sDialog.dismissWithAnimation();
+                        Intent intent0 = new Intent(Intent.ACTION_CALL);
+                        intent0.setData(Uri.parse("tel:0123456"));
+                        if (ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                            checkCallPermission();
+                            return;
+                        }
+                        startActivity(intent0);
+                    }
+                })
+                .show();
+    }
+
+    private boolean checkCallPermission() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CALL_PHONE)) {
+                return true;
+            } else {
+                requestPermissions(new String[]{Manifest.permission.CALL_PHONE}, REQUEST_CALL_PHONE);
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
