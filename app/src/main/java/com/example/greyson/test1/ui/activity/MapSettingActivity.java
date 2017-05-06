@@ -130,8 +130,10 @@ public class MapSettingActivity extends BaseActivity implements View.OnClickList
         Bundle b = fromIntent.getExtras();
         String tag = b.getString("tag");
         String status = b.getString("status");
+        String deviceId = b.getString("deviceId");
         fromIntent.putExtra("tag", tag);
         fromIntent.putExtra("status", status);
+        fromIntent.putExtra("deviceId", deviceId);
         setResult( 1 , fromIntent);
         finish();
     }
@@ -139,6 +141,7 @@ public class MapSettingActivity extends BaseActivity implements View.OnClickList
     private void savePin() {
         Bundle b = fromIntent.getExtras();
         String tag = b.getString("tag");
+        String deviceId = b.getString("deviceId");
         String status = b.getString("status");
         Double lat = b.getDouble("lat");
         Double lng = b.getDouble("lng");
@@ -148,6 +151,7 @@ public class MapSettingActivity extends BaseActivity implements View.OnClickList
         fromIntent.putExtra("lng", lng);
         fromIntent.putExtra("tag", tag);
         fromIntent.putExtra("status", status);
+        fromIntent.putExtra("deviceId", deviceId);
         fromIntent.putExtra("note", mETAddNote.getText().toString());
 
         setResult( 2 , fromIntent);

@@ -11,6 +11,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
+import android.telephony.TelephonyManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,9 +20,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.greyson.test1.R;
+import com.example.greyson.test1.entity.DeletePinRes;
+import com.example.greyson.test1.entity.GetAllPinRes;
+import com.example.greyson.test1.entity.GetMyPinRes;
 import com.example.greyson.test1.entity.MyMarker;
 import com.example.greyson.test1.entity.RouteRes;
 import com.example.greyson.test1.entity.SafePlaceRes;
+import com.example.greyson.test1.entity.SavePinRes;
 import com.example.greyson.test1.entity.UserPinHistory;
 import com.example.greyson.test1.net.WSNetService;
 import com.example.greyson.test1.net.WSNetService2;
@@ -97,6 +102,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
             public void onClick(View v) {
                 if (mFAB.isSelected()) {
                     initPlaceMap();
+                    loadAllPinFromServer();///
                     mFAB.setImageResource(R.drawable.ic_close_black_24dp);
                     mFAB.setSelected(false);
                     if (mTvSafetyPlace.getText().toString().equals("All My Pins")) {
@@ -171,7 +177,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         if(ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED) {
             googleMap.setMyLocationEnabled(true);
-            if (mFAB.isSelected() == true) {initPinMap();}
+            if (mFAB.isSelected() == true) {}/////////////////
             else {initPlaceMap();}
         }
     }
@@ -475,19 +481,21 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                     } else if (mLLSafePlace.isSelected()) {
                         if (mTvSafetyPlace.getText().toString().equals("Show Safety Map")) {
                             mTvSafetyPlace.setText("Hide All Pins");
-
                             initPlaceMap();
+                            loadAllPinFromServer();
                             hidePin = false;
                             mLLSafePlace.setSelected(false);
                         } else {
                             mTvSafetyPlace.setText("Hide All Pins");
                             initPlaceMap();
+                            loadAllPinFromServer();
                             hidePin = false;
                             mLLSafePlace.setSelected(false);
                         }
                     } else {
                         mTvSafetyPlace.setText("Hide All Pins");
                         initPlaceMap();
+                        loadAllPinFromServer();
                         hidePin = false;
                         mLLSafePlace.setSelected(false);
                     }
@@ -536,7 +544,75 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
         googleMap.animateCamera(CameraUpdateFactory.zoomTo(14));
         handleNewLocation();
-        showPinMap();
+        ///showPinMap();//////////////////////
+    }
+
+    private void showMyPinMap(GetMyPinRes getMyPinRes) {
+        List<GetMyPinRes.ResultsBean> resultsBeanList = getMyPinRes.getResults();
+        Iterator<GetMyPinRes.ResultsBean> iterator = resultsBeanList.iterator();
+        while (iterator.hasNext()) {
+            GetMyPinRes.ResultsBean resultsBean = iterator.next();
+            LatLng l =new LatLng(Double.valueOf(resultsBean.getLatitude()),Double.valueOf(resultsBean.getLongitude()));
+            Marker marker = googleMap.addMarker(new MarkerOptions().position(l));
+            setMarkerColor(marker, resultsBean.getCrime());
+            marker.setSnippet(resultsBean.getCrimedesc());
+            marker.showInfoWindow();
+        }
+        googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                if (mFAB.isSelected() == true) {
+                    //marker.setSnippet("Click here for setting");//
+                    marker.showInfoWindow();
+                }else{
+                    marker.showInfoWindow();
+                }
+                return true;
+            }
+        });
+
+        googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                if (mFAB.isSelected() == true) {
+                    sendPinStatus(marker);
+                }
+            }
+        });
+    }
+
+    private void showAllPinMap(GetAllPinRes getAllPinRes) {
+        List<GetAllPinRes.ResultsBean> resultsBeanList = getAllPinRes.getResults();
+        Iterator<GetAllPinRes.ResultsBean> iterator = resultsBeanList.iterator();
+        while (iterator.hasNext()) {
+            GetAllPinRes.ResultsBean resultsBean = iterator.next();
+            LatLng l =new LatLng(Double.valueOf(resultsBean.getLatitude()),Double.valueOf(resultsBean.getLongitude()));
+            Marker marker = googleMap.addMarker(new MarkerOptions().position(l));
+            setMarkerColor(marker, resultsBean.getCrime());
+            marker.setSnippet(resultsBean.getCrimedesc());
+            marker.showInfoWindow();
+        }
+        googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                if (mFAB.isSelected() == true) {
+                    //marker.setSnippet("Click here for setting");//
+                    marker.showInfoWindow();
+                }else{
+                    marker.showInfoWindow();
+                }
+                return true;
+            }
+        });
+
+        googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                if (mFAB.isSelected() == true) {
+                    sendPinStatus(marker);
+                }
+            }
+        });
     }
 
     private void showPinMap() {
@@ -655,6 +731,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         intent.putExtra("lat", marker.getPosition().latitude);
         intent.putExtra("lng", marker.getPosition().longitude);
         intent.putExtra("note", marker.getSnippet());
+        intent.putExtra("deviceId", getDeviceId() + getTimeStamp());
         startActivityForResult(intent, 1); // send info to other activity
     }
 
@@ -670,10 +747,37 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         if (resultCode == 0) {
 
         } else if (resultCode == 1) {
-            handleDeletePin(data);
+            //handleDeletePin(data);
+            handleDeletePinFromServer(data);
+            showMyPinFromServer();
         } else if (resultCode == 2) {
-            handleSavePin(data);
+            //handleSavePin(data);
+            savePinToServer(data);
+            showMyPinFromServer();
         }
+    }
+
+    private void showMyPinFromServer() {
+        Map<String, String> params = new HashMap<>();
+        params.put("deviceid", getDeviceId());
+        mRetrofit.create(WSNetService.class)
+                .getMyPinData("http://usafe.epnjkefarc.us-west-2.elasticbeanstalk.com/api/posts/?format=json",params)
+                .subscribeOn(Schedulers.io())
+                .compose(this.<GetMyPinRes>bindToLifecycle())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<GetMyPinRes>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+                    @Override
+                    public void onError(Throwable e) {
+                    }
+
+                    @Override
+                    public void onNext(GetMyPinRes getMyPinRes) {
+                        showMyPinMap(getMyPinRes);
+                    }
+                });
     }
 
     /**
@@ -682,6 +786,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      */
     private void handleDeletePin(Intent data) {
         Bundle b = data.getExtras();
+        String deviceId = b.getString("deviceId");
         String tag = b.getString("tag");
         UserPinHistory userPinHistory = getObjectFromSharedPreference("admin");
         ArrayList<MyMarker> myMarkerList = userPinHistory.getMmk();
@@ -695,6 +800,13 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
             }
         }
         saveObjectToSharedPreference("admin",userPinHistory);
+        //deletePinFromServer(deviceId);
+    }
+
+    private void handleDeletePinFromServer(Intent data) {
+        Bundle b = data.getExtras();
+        String deviceId = b.getString("deviceId");
+        deletePinFromServer(deviceId);
     }
 
     /**
@@ -703,7 +815,9 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      */
     private void handleSavePin (Intent data) {
         Bundle b = data.getExtras();
+        String id = b.getString("id");
         String color = b.getString("color");
+        String type = color.split(" ")[0];
         String note = b.getString("note");
         Double lat = b.getDouble("lat");
         Double lng = b.getDouble("lng");
@@ -717,13 +831,141 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
             updateMarker.setMkLnt(lng);
             updateMarker.setMkColor(color);
             updateMarker.setMkDescription(note);
+            updatePinToServer(id,type,note,lat,lng);
         }else{
             MyMarker myMarker = new MyMarker(tag, lat, lng, color, note);
             userPinHistory.getMmk().add(myMarker);
         }
+        //savePinToServer(type, note, lat, lng);/////////////////
         saveObjectToSharedPreference("admin",userPinHistory);
     }
 
+    private String getDeviceId() {
+        TelephonyManager tManager = (TelephonyManager) mContext.getSystemService(mContext.TELEPHONY_SERVICE);
+        String uid = tManager.getDeviceId();
+        return uid;
+    }
+
+    private String getTimeStamp() {
+        Long tsLong = System.currentTimeMillis()/1000;
+        String ts = tsLong.toString();
+        return ts;
+    }
+
+    private void loadAllPinFromServer() {
+        Map<String, String> params = new HashMap<>();
+        mRetrofit.create(WSNetService.class)
+                .getAllPinData("http://usafe.epnjkefarc.us-west-2.elasticbeanstalk.com/api/posts/?format=json",params)
+                .subscribeOn(Schedulers.io())
+                .compose(this.<GetAllPinRes>bindToLifecycle())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<GetAllPinRes>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+                    @Override
+                    public void onError(Throwable e) {
+                    }
+
+                    @Override
+                    public void onNext(GetAllPinRes getAllPinRes) {
+                        showAllPinMap(getAllPinRes);
+                    }
+                });
+    }
+
+    private void savePinToServer(Intent data) {
+        Bundle b = data.getExtras();
+        String id = b.getString("id");
+        String color = b.getString("color");
+        String type = color.split(" ")[0];
+        String note = b.getString("note");
+        Double lat = b.getDouble("lat");
+        Double lng = b.getDouble("lng");
+
+        String pinStatus = b.getString("status");
+        if (pinStatus.equals("old")) {
+            updatePinToServer(id,type,note,lat,lng);
+        }
+
+        Map<String, String> params = new HashMap<>();
+        params.put("deviceid", getDeviceId() + getTimeStamp());
+        params.put("crime", type);
+        params.put("crimedesc", note);
+        params.put("lat", String.valueOf(lat));
+        params.put("lng", String .valueOf(lng));
+        mRetrofit.create(WSNetService.class)
+                .getSavePinData("http://usafe.epnjkefarc.us-west-2.elasticbeanstalk.com/api/posts/createincident/?",params)
+                .subscribeOn(Schedulers.io())
+                .compose(this.<SavePinRes>bindToLifecycle())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<SavePinRes>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                    }
+
+                    @Override
+                    public void onNext(SavePinRes savePinRes) {
+
+                    }
+                });
+    }
+
+    private void updatePinToServer(String id, String crime, String crimedesc, double lat, double lng) {
+        Map<String, String> params = new HashMap<>();
+        params.put("deviceid", getDeviceId() + getTimeStamp());
+        params.put("crime", crime);
+        params.put("crimedesc", crimedesc);
+        params.put("lat", String.valueOf(lat));
+        params.put("lng", String .valueOf(lng));
+        mRetrofit.create(WSNetService.class)
+                .getSavePinData("http://usafe.epnjkefarc.us-west-2.elasticbeanstalk.com/api/posts/createincident/?",params)
+                .subscribeOn(Schedulers.io())
+                .compose(this.<SavePinRes>bindToLifecycle())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<SavePinRes>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                    }
+
+                    @Override
+                    public void onNext(SavePinRes savePinRes) {
+
+                    }
+                });
+    }
+
+    private void deletePinFromServer(String id) {
+        Map<String, String> params = new HashMap<>();
+        params.put("deviceid", id);
+        mRetrofit.create(WSNetService.class)
+                .getDeletePinData("http://usafe.epnjkefarc.us-west-2.elasticbeanstalk.com/api/posts/delete/?",params)
+                .subscribeOn(Schedulers.io())
+                .compose(this.<DeletePinRes>bindToLifecycle())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<DeletePinRes>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                    }
+
+                    @Override
+                    public void onNext(DeletePinRes deletePinRes) {
+
+                    }
+                });
+    }
     public void saveObjectToSharedPreference(String key, Object obj) {
         Gson gson = new Gson();
         String jsonObj = gson.toJson(obj);
@@ -775,23 +1017,23 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      */
     private void setMarkerColor(Marker marker, String color) {
         switch (color) {
-            case "Assault(Red)":
+            case "Assault (Red)":case "Assault":
                 marker.setTitle("Assault");
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(10));
                 break;
-            case "Discrimination(Purple)":
+            case "Discrimination (Purple)":case "Discrimination":
                 marker.setTitle("Discrimination");
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(280));
                 break;
-            case "Stalking(Blue)":
+            case "Stalking (Blue)":case "Stalking":
                 marker.setTitle("Stalking");
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(230));
                 break;
-            case "Theft/Robbery(Green)":
+            case "Theft/Robbery (Green)":case "Theft/Robbery":
                 marker.setTitle("Theft/Robbery");
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(90));
                 break;
-            case "Others(Yellow)":
+            case "Others (Yellow)":case "Others":
                 marker.setTitle("Others");
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(70));
                 break;
@@ -816,7 +1058,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      */
     @Override
     public void onLocationChanged(Location location) {
-        if (mFAB.isSelected() != true) {
+        if (mFAB.isSelected() == false) {
             googleMap.clear();
             handleNewLocation();}///
     }

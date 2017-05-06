@@ -2,11 +2,11 @@
     <string name="app_name">USafe</string>
     <string name="google_maps_api_key">AIzaSyB6yMoK98piZ4RRQ0n3o6nJvLTNZBGWOvQ</string>
     <string-array name="changepin_array">
-        <item>Assault(Red)</item>
-        <item>Discrimination(Purple)</item>
-        <item>Stalking(Blue)</item>
-        <item>Theft/Robbery(Green)</item>
-        <item>Others(Yellow)</item>
+        <item>Assault (Red)</item>
+        <item>Discrimination (Purple)</item>
+        <item>Stalking (Blue)</item>
+        <item>Theft/Robbery (Green)</item>
+        <item>Others (Yellow)</item>
     </string-array>
     <string-array name="time_selection">
         <item>At the end</item>
