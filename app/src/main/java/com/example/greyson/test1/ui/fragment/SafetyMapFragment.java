@@ -84,6 +84,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
     private SharedPreferences preferences;
     private String cloLocation;
     private boolean hidePin;
+
     /**
      * This method is used to initialize the map view and request the current location
      * @param inflater
@@ -97,20 +98,19 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
 
         mLLSafePlace = (LinearLayout) view.findViewById(R.id.ll_safetyplace); // Initialize the layout uesd to call safe places map
         mTvSafetyPlace = (TextView) view.findViewById(R.id.tv_safetyplace);
-        mFAB = (FloatingActionButton)view.findViewById(R.id.fab_map);
+        mFAB = (FloatingActionButton) view.findViewById(R.id.fab_map);
         mFAB.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if (mFAB.isSelected()) {
                     initPlaceMap();
-                    loadAllPinFromServer();///
+                    //loadAllPinFromServer();///
                     mFAB.setImageResource(R.drawable.ic_close_black_24dp);
                     mFAB.setSelected(false);
                     if (mTvSafetyPlace.getText().toString().equals("All My Pins")) {
                         mTvSafetyPlace.setText("Hide All Pins");
                         mTvSafetyPlace.setSelected(false);
                     }
-                }
-                else if (!mFAB.isSelected()) {
+                } else if (!mFAB.isSelected()) {
                     initPinMap();
                     mFAB.setImageResource(R.drawable.ic_close_white_24dp);
                     mFAB.setSelected(true);
@@ -160,7 +160,9 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                         PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
-            } else {requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_FINE_LOCATION);}
+            } else {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_FINE_LOCATION);
+            }
         }
         googleMap.getUiSettings().setZoomControlsEnabled(true);  // Add zoom in/out button
         googleMap.getUiSettings().setCompassEnabled(true);       // Add compass button
@@ -174,11 +176,18 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      */
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        if(ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
+        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED) {
+            updateLocation();
             googleMap.setMyLocationEnabled(true);
-            if (mFAB.isSelected() == true) {}/////////////////
-            else {initPlaceMap();}
+            if (mFAB.isSelected() == true) {
+                initPinMap();
+            }/////////////////
+            else if(mTvSafetyPlace.getText().toString().equals("Show Safety Map")){
+                showAllMyPin();
+            } else {
+                initPlaceMap();
+            }
         }
     }
 
@@ -235,6 +244,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                     @Override
                     public void onCompleted() {
                     }
+
                     @Override
                     public void onError(Throwable e) {
                     }
@@ -250,7 +260,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      * This method is to show the closest route
      * @param routeRes
      */
-    private  void showRoute(RouteRes routeRes) {
+    private void showRoute(RouteRes routeRes) {
         PolylineOptions polylineOpt = new PolylineOptions();
         try {
             for (RouteRes.RoutesBean rRes : routeRes.getRoutes()) {
@@ -262,16 +272,18 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                         for (int l = 0; l < list.size(); l++) {
                             Double lat = list.get(l).latitude;   // The closest location
                             Double lng = list.get(l).longitude;  // The closest location
-                            polylineOpt.add(new LatLng(lat,lng));
+                            polylineOpt.add(new LatLng(lat, lng));
                         }
                     }
                 }
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
         polylineOpt.color(Color.RED);
         Polyline line = googleMap.addPolyline(polylineOpt);
         line.setWidth(10);
     }
+
     private List<LatLng> decodePoly(String encoded) {
         List<LatLng> poly = new ArrayList<LatLng>();
         int index = 0, len = encoded.length();
@@ -311,13 +323,12 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
     private void showMarker(SafePlaceRes safePlaceRes) {
         String message = safePlaceRes.getMessage();
         // Decide range
-        if (message.equalsIgnoreCase("5 KM"))
-        {
+        if (message.equalsIgnoreCase("5 KM")) {
             googleMap.animateCamera(CameraUpdateFactory.zoomTo(12));
-            Toast.makeText(mContext, "There are no Safe Place in 2KM, Change to 5KM",Toast.LENGTH_LONG).show();
+            Toast.makeText(mContext, "There are no Safe Place in 2KM, Change to 5KM", Toast.LENGTH_LONG).show();
+        } else if (message.equalsIgnoreCase("Nothing found")) {
+            Toast.makeText(mContext, "There are no Safe Place in 5KM", Toast.LENGTH_LONG).show();
         }
-        else if (message.equalsIgnoreCase("Nothing found"))
-        {Toast.makeText(mContext, "There are no Safe Place in 5KM",Toast.LENGTH_LONG).show();}
         // Decide different icon
         for (SafePlaceRes.ResultsBean sfRes : safePlaceRes.getResults()) {
             Double lat = sfRes.getLatitude();
@@ -351,25 +362,25 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                     break;
                 case "Police Station":
                     googleMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(lat,lng))
+                            .position(new LatLng(lat, lng))
                             .title(type)
                             .icon(BitmapDescriptorFactory.fromResource(R.drawable.safeplace_p)));
                     break;
                 case "Hospital":
                     googleMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(lat,lng))
+                            .position(new LatLng(lat, lng))
                             .title(type)
                             .icon(BitmapDescriptorFactory.fromResource(R.drawable.safeplace_h)));
                     break;
                 case "Supermarket":
                     googleMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(lat,lng))
+                            .position(new LatLng(lat, lng))
                             .title(type)
                             .icon(BitmapDescriptorFactory.fromResource(R.drawable.safeplace_s)));
                     break;
                 default:
                     googleMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(lat,lng))
+                            .position(new LatLng(lat, lng))
                             .title(type));
 
             }
@@ -394,6 +405,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                 requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_FINE_LOCATION);
             }
         }
+        //LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,mLocationRequest, this);////////
         Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         double currentLatitude = location.getLatitude();     // Get laititude
         double currentLongitude = location.getLongitude();   // Get laititude
@@ -407,12 +419,12 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      * @param latLng
      */
     private void saveLastLocationToSharedPreference(LatLng latLng) {
-            String lat = String.valueOf(latLng.latitude);
-            String lng = String.valueOf(latLng.longitude);
-            SharedPreferences preferences1 = mContext.getSharedPreferences("LastLocation",MODE_PRIVATE);
-            SharedPreferences.Editor editor = preferences1.edit();
-            editor.putString("last location", lat + "," + lng);
-            editor.commit();
+        String lat = String.valueOf(latLng.latitude);
+        String lng = String.valueOf(latLng.longitude);
+        SharedPreferences preferences1 = mContext.getSharedPreferences("LastLocation", MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences1.edit();
+        editor.putString("last location", lat + "," + lng);
+        editor.commit();
 
     }
 
@@ -433,7 +445,9 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                     if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) !=
                             PackageManager.PERMISSION_GRANTED &&
                             ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) !=
-                            PackageManager.PERMISSION_GRANTED) {return;}
+                                    PackageManager.PERMISSION_GRANTED) {
+                        return;
+                    }
                     googleMap.setMyLocationEnabled(true);
                     LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
                     initPlaceMap();
@@ -467,12 +481,11 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         switch (v.getId()) {
             case R.id.ll_safetyplace:
                 if (mFAB.isSelected()) {
-                    showAllMyPins();
+                    showAllMyPin();
                     mFAB.setImageResource(R.drawable.ic_close_black_24dp);
                     mFAB.setSelected(false);
                     mTvSafetyPlace.setText("Show Safety Map");
-                }
-                else if (!mFAB.isSelected()) {
+                } else if (!mFAB.isSelected()) {
                     if (!mLLSafePlace.isSelected()) {
                         hidePinMap();
                         hidePin = true;
@@ -482,20 +495,20 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                         if (mTvSafetyPlace.getText().toString().equals("Show Safety Map")) {
                             mTvSafetyPlace.setText("Hide All Pins");
                             initPlaceMap();
-                            loadAllPinFromServer();
+                            //loadAllPinFromServer();
                             hidePin = false;
                             mLLSafePlace.setSelected(false);
                         } else {
                             mTvSafetyPlace.setText("Hide All Pins");
                             initPlaceMap();
-                            loadAllPinFromServer();
+                            //loadAllPinFromServer();
                             hidePin = false;
                             mLLSafePlace.setSelected(false);
                         }
                     } else {
                         mTvSafetyPlace.setText("Hide All Pins");
                         initPlaceMap();
-                        loadAllPinFromServer();
+                        //loadAllPinFromServer();
                         hidePin = false;
                         mLLSafePlace.setSelected(false);
                     }
@@ -504,12 +517,40 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         }
     }
 
+    private void showAllMyPin() {
+        googleMap.clear();
+        LatLng latLng = getCurrentLocation();
+        googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(10));
+        showMyPinFromServer();
+        googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                if (mFAB.isSelected() == true) {
+                    //marker.setSnippet("Click here for setting");//
+                    marker.showInfoWindow();
+                } else {
+                    marker.showInfoWindow();
+                }
+                return true;
+            }
+        });
+        googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                if (mFAB.isSelected() == true || mTvSafetyPlace.getText().toString().equals("Show Safety Map")) {
+                    sendPinStatus(marker);
+                }
+            }
+        });
+    }
+
     private void showAllMyPins() {
         googleMap.clear();
         LatLng latLng = getCurrentLocation();
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
         googleMap.animateCamera(CameraUpdateFactory.zoomTo(12));
-        preferences = mContext.getSharedPreferences("LocalUser",MODE_PRIVATE);
+        preferences = mContext.getSharedPreferences("LocalUser", MODE_PRIVATE);
         showMarkerFromSharedPreference(getObjectFromSharedPreference("admin"));
 
         googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
@@ -518,7 +559,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                 if (mFAB.isSelected() == true) {
                     //marker.setSnippet("Click here for setting");//
                     marker.showInfoWindow();
-                }else{
+                } else {
                     marker.showInfoWindow();
                 }
                 return true;
@@ -544,6 +585,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
         googleMap.animateCamera(CameraUpdateFactory.zoomTo(14));
         handleNewLocation();
+        loadAllPinFromServer();
         ///showPinMap();//////////////////////
     }
 
@@ -552,11 +594,13 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         Iterator<GetMyPinRes.ResultsBean> iterator = resultsBeanList.iterator();
         while (iterator.hasNext()) {
             GetMyPinRes.ResultsBean resultsBean = iterator.next();
-            LatLng l =new LatLng(Double.valueOf(resultsBean.getLatitude()),Double.valueOf(resultsBean.getLongitude()));
+            LatLng l = new LatLng(Double.valueOf(resultsBean.getLatitude()), Double.valueOf(resultsBean.getLongitude()));
             Marker marker = googleMap.addMarker(new MarkerOptions().position(l));
             setMarkerColor(marker, resultsBean.getCrime());
             marker.setSnippet(resultsBean.getCrimedesc());
+            marker.setTag(resultsBean.getDeviceid());
             marker.showInfoWindow();
+            //marker.setZIndex((float)(Integer.valueOf(resultsBean.getDeviceid())));///////
         }
         googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
@@ -564,7 +608,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                 if (mFAB.isSelected() == true) {
                     //marker.setSnippet("Click here for setting");//
                     marker.showInfoWindow();
-                }else{
+                } else {
                     marker.showInfoWindow();
                 }
                 return true;
@@ -574,7 +618,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
             @Override
             public void onInfoWindowClick(Marker marker) {
-                if (mFAB.isSelected() == true) {
+                if (mFAB.isSelected() == true || mTvSafetyPlace.getText().toString().equals("Show Safety Map")) {
                     sendPinStatus(marker);
                 }
             }
@@ -586,10 +630,12 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         Iterator<GetAllPinRes.ResultsBean> iterator = resultsBeanList.iterator();
         while (iterator.hasNext()) {
             GetAllPinRes.ResultsBean resultsBean = iterator.next();
-            LatLng l =new LatLng(Double.valueOf(resultsBean.getLatitude()),Double.valueOf(resultsBean.getLongitude()));
+            LatLng l = new LatLng(Double.valueOf(resultsBean.getLatitude()), Double.valueOf(resultsBean.getLongitude()));
             Marker marker = googleMap.addMarker(new MarkerOptions().position(l));
             setMarkerColor(marker, resultsBean.getCrime());
             marker.setSnippet(resultsBean.getCrimedesc());
+            marker.setTag(resultsBean.getDeviceid());///////
+            //marker.setZIndex((float)(Integer.valueOf(resultsBean.getDeviceid())));///////
             marker.showInfoWindow();
         }
         googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
@@ -598,7 +644,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                 if (mFAB.isSelected() == true) {
                     //marker.setSnippet("Click here for setting");//
                     marker.showInfoWindow();
-                }else{
+                } else {
                     marker.showInfoWindow();
                 }
                 return true;
@@ -608,7 +654,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
             @Override
             public void onInfoWindowClick(Marker marker) {
-                if (mFAB.isSelected() == true) {
+                if (mFAB.isSelected() == true || mTvSafetyPlace.getText().toString().equals("Show Safety Map")) {
                     sendPinStatus(marker);
                 }
             }
@@ -616,7 +662,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
     }
 
     private void showPinMap() {
-        preferences = mContext.getSharedPreferences("LocalUser",MODE_PRIVATE);
+        preferences = mContext.getSharedPreferences("LocalUser", MODE_PRIVATE);
         showMarkerFromSharedPreference(getObjectFromSharedPreference("admin"));
         googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
@@ -624,7 +670,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                 if (mFAB.isSelected() == true) {
                     //marker.setSnippet("Click here for setting");//
                     marker.showInfoWindow();
-                }else{
+                } else {
                     marker.showInfoWindow();
                 }
                 return true;
@@ -657,13 +703,13 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         LatLng latLng = getCurrentLocation();
         googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
         googleMap.animateCamera(CameraUpdateFactory.zoomTo(18));
-        preferences = mContext.getSharedPreferences("LocalUser",MODE_PRIVATE);
-        showMarkerFromSharedPreference(getObjectFromSharedPreference("admin"));
-
+        //preferences = mContext.getSharedPreferences("LocalUser",MODE_PRIVATE);
+        //showMarkerFromSharedPreference(getObjectFromSharedPreference("admin"));
         Marker pinMarker = googleMap.addMarker(new MarkerOptions().position(latLng)
                 .draggable(true).title("New Incident Pin").snippet("Long Press for Dragging")
                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET)));
         pinMarker.showInfoWindow();
+        showMyPinFromServer();
 
         googleMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
             @Override
@@ -691,7 +737,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                 if (mFAB.isSelected() == true) {
                     //marker.setSnippet("Click here for setting");//
                     marker.showInfoWindow();
-                }else{
+                } else {
                     marker.showInfoWindow();
                 }
                 return true;
@@ -701,7 +747,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
         googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
             @Override
             public void onInfoWindowClick(Marker marker) {
-                if (mFAB.isSelected() == true) {
+                if (mFAB.isSelected() == true || mTvSafetyPlace.getText().toString().equals("Show Safety Map")) {
                     sendPinStatus(marker);
                 }
             }
@@ -712,29 +758,44 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
      * This method is to send pin information
      * @param marker
      */
-    public void sendPinStatus (Marker marker) {
+    public void sendPinStatus(Marker marker) {
         Intent intent = new Intent();
         intent.setClass(mContext, MapSettingActivity.class);
         String markerTag;
         String markerStatus;
         markerTag = (String) marker.getTag();
         markerStatus = "old";
-        if (markerTag == null){
+        if (markerTag == null) {
             markerStatus = "new";
-            int listSize = getObjectFromSharedPreference("admin").getMmk().size();
-            String pinIndex = String.valueOf(listSize);
-            markerTag = pinIndex;
+            //int listSize = getObjectFromSharedPreference("admin").getMmk().size();
+            //String pinIndex = String.valueOf(listSize);
+            markerTag = "1";
             marker.setSnippet("");
+            //marker.setZIndex(0);
         }
+        //intent.putExtra("zindex",String.valueOf(Math.round(marker.getZIndex())));
         intent.putExtra("status", markerStatus);
         intent.putExtra("tag", markerTag);
         intent.putExtra("lat", marker.getPosition().latitude);
         intent.putExtra("lng", marker.getPosition().longitude);
         intent.putExtra("note", marker.getSnippet());
-        intent.putExtra("deviceId", getDeviceId() + getTimeStamp());
+        intent.putExtra("deviceId", getDeviceId() + getTimeStamp());//////////////////////
         startActivityForResult(intent, 1); // send info to other activity
     }
 
+    private void updateLocation() {
+        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+    }
     /**
      *
      * @param requestCode
@@ -745,15 +806,17 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == 0) {
-
+            if (mTvSafetyPlace.getText().toString().equals("Show Safety Map")) {
+                //showAllMyPin();
+            }
         } else if (resultCode == 1) {
             //handleDeletePin(data);
             handleDeletePinFromServer(data);
-            showMyPinFromServer();
+            //initPinMap();
         } else if (resultCode == 2) {
             //handleSavePin(data);
             savePinToServer(data);
-            showMyPinFromServer();
+            //initPinMap();
         }
     }
 
@@ -805,7 +868,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
 
     private void handleDeletePinFromServer(Intent data) {
         Bundle b = data.getExtras();
-        String deviceId = b.getString("deviceId");
+        String deviceId = b.getString("tag");
         deletePinFromServer(deviceId);
     }
 
@@ -833,7 +896,7 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
             updateMarker.setMkDescription(note);
             updatePinToServer(id,type,note,lat,lng);
         }else{
-            MyMarker myMarker = new MyMarker(tag, lat, lng, color, note);
+            MyMarker myMarker = new MyMarker(id,tag, lat, lng, color, note);////
             userPinHistory.getMmk().add(myMarker);
         }
         //savePinToServer(type, note, lat, lng);/////////////////
@@ -876,16 +939,20 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
 
     private void savePinToServer(Intent data) {
         Bundle b = data.getExtras();
-        String id = b.getString("id");
+        String deviceId = b.getString("deviceId");
         String color = b.getString("color");
         String type = color.split(" ")[0];
         String note = b.getString("note");
         Double lat = b.getDouble("lat");
         Double lng = b.getDouble("lng");
+        String tag = b.getString("tag");
 
+        //String zindex = b.getString("zindex");
         String pinStatus = b.getString("status");
+
         if (pinStatus.equals("old")) {
-            updatePinToServer(id,type,note,lat,lng);
+            updatePinToServer(tag,type,note,lat,lng);////
+            return;
         }
 
         Map<String, String> params = new HashMap<>();
@@ -915,15 +982,15 @@ public class SafetyMapFragment extends BaseFragment implements GoogleApiClient.C
                 });
     }
 
-    private void updatePinToServer(String id, String crime, String crimedesc, double lat, double lng) {
+    private void updatePinToServer(String deviceId, String crime, String crimedesc, double lat, double lng) {
         Map<String, String> params = new HashMap<>();
-        params.put("deviceid", getDeviceId() + getTimeStamp());
+        params.put("deviceid", deviceId);
         params.put("crime", crime);
         params.put("crimedesc", crimedesc);
         params.put("lat", String.valueOf(lat));
         params.put("lng", String .valueOf(lng));
         mRetrofit.create(WSNetService.class)
-                .getSavePinData("http://usafe.epnjkefarc.us-west-2.elasticbeanstalk.com/api/posts/createincident/?",params)
+                .getSavePinData("http://usafe.epnjkefarc.us-west-2.elasticbeanstalk.com/api/posts/update/?",params)
                 .subscribeOn(Schedulers.io())
                 .compose(this.<SavePinRes>bindToLifecycle())
                 .observeOn(AndroidSchedulers.mainThread())

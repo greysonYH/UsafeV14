@@ -7,18 +7,28 @@ import java.io.Serializable;
  */
 
 public class MyMarker implements Serializable {
+    private String id;
     private String mkTag;
     private Double mkLat;
     private Double mkLnt;
     private String mkColor;
     private String mkDescription;
 
-    public MyMarker(String mkTag, Double mkLat, Double mkLnt, String mkColor, String mkDescription) {
+    public MyMarker(String id, String mkTag, Double mkLat, Double mkLnt, String mkColor, String mkDescription) {
+        this.id = id;
         this.mkTag = mkTag;
         this.mkLat = mkLat;
         this.mkLnt = mkLnt;
         this.mkColor = mkColor;
         this.mkDescription = mkDescription;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getMkTag() {
